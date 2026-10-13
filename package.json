@@ -1,0 +1,11 @@
+{
+  "name": "amathic-engine",
+  "version": "0.1.0",
+  "description": "Conversor de SKP a bloques CAD",
+  "scripts": {
+    "dev": "echo 'Beta ejecutándose'"
+  },
+  "dependencies": {
+    "openskp": "latest"
+  }
+}
