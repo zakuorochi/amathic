@@ -57,9 +57,12 @@ export default async function handler(req, res) {
             });
 
             // 3. MOTOR CAD
-            let d = new Drawing();
+       let d = new Drawing();
             d.setUnits('Decimeters');
-            d.layer('GEOMETRIA_PROYECTADA', Drawing.ACI.WHITE, 'CONTINUOUS');
+            
+            // CORRECCIÓN AQUÍ: Usamos addLayer y la activamos
+            d.addLayer('GEOMETRIA_PROYECTADA', Drawing.ACI.WHITE, 'CONTINUOUS');
+            d.setActiveLayer('GEOMETRIA_PROYECTADA');
             
             lineas2D.forEach(linea => {
                 d.drawLine(linea.start[0], linea.start[1], linea.end[0], linea.end[1]);
