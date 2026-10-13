@@ -58,6 +58,7 @@
     </footer>
 
     <!-- Client-side Logic Script -->
+   <!-- Client-side Logic Script -->
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -69,9 +70,7 @@
         dropZone.addEventListener('click', () => fileInput.click());
 
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                processFile(e.target.files[0]);
-            }
+            if (e.target.files.length > 0) processFile(e.target.files[0]);
         });
 
         dropZone.addEventListener('dragover', (e) => {
@@ -79,49 +78,55 @@
             dropZone.classList.add('border-cyan-400', 'bg-slate-900/80');
         });
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-cyan-400', 'bg-slate-900/80');
-        });
-
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-cyan-400', 'bg-slate-900/80'));
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('border-cyan-400', 'bg-slate-900/80');
-            if (e.dataTransfer.files.length > 0) {
-                processFile(e.dataTransfer.files[0]);
-            }
+            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
         });
 
-        function processFile(file) {
+        async function processFile(file) {
             statusBox.classList.remove('hidden');
             downloadContainer.classList.add('hidden');
-            logMessage.textContent = `Analizando archivo binario: ${file.name}...`;
+            logMessage.textContent = `Enviando ${file.name} al servidor AMATHIC...`;
 
-            setTimeout(() => {
-                logMessage.textContent = "Extrayendo matriz matemática de vértices y aristas 3D...";
-            }, 1200);
+            try {
+                // Preparamos el archivo para enviarlo a la API
+                const formData = new FormData();
+                formData.append('file', file);
 
-            setTimeout(() => {
-                logMessage.textContent = "Generando proyecciones ortogonales y compilando archivo vectorial DXF...";
-            }, 2500);
+                // Llamamos a nuestra Serverless Function en la carpeta /api
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            setTimeout(() => {
-                logMessage.textContent = "¡Éxito! El bloque CAD ha sido generado correctamente.";
+                if (!response.ok) throw new Error('Error en el motor de conversión.');
+
+                logMessage.textContent = "Traduciendo matriz y compilando archivo vectorial DXF...";
+
+                // Recibimos el archivo DXF real
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                logMessage.textContent = "¡Éxito! El bloque CAD se ha renderizado correctamente.";
                 downloadContainer.classList.remove('hidden');
-            }, 3800);
-        }
 
-        downloadBtn.addEventListener('click', () => {
-            // Genera un archivo DXF de ejemplo simulado descargable para la beta
-            const dummyDxfContent = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0.0\n20\n0.0\n30\n0.0\n11\n100.0\n21\n100.0\n31\n0.0\n0\nENDSEC\n0\nEOF";
-            const blob = new Blob([dummyDxfContent], { type: 'application/dxf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'amathic_modelo_2d.dxf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        });
+                // Configuramos el botón para descargar el archivo procesado por la API
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name.replace('.skp', '_2D.dxf');
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+
+            } catch (error) {
+                logMessage.textContent = "Error: No se pudo conectar con el motor CAD.";
+                console.error(error);
+            }
+        }
     </script>
 </body>
 </html>
