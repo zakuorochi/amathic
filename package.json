@@ -1,11 +1,13 @@
 {
   "name": "amathic-engine",
   "version": "0.1.0",
-  "description": "Conversor de SKP a bloques CAD",
+  "description": "Motor de conversión SKP a DXF",
   "scripts": {
     "dev": "echo 'Beta ejecutándose'"
   },
   "dependencies": {
-    "openskp": "latest"
+    "dxf-writer": "latest",
+    "formidable": "latest",
+    "openskp": "latest" 
   }
 }
