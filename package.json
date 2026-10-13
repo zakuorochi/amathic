@@ -2,12 +2,13 @@
   "name": "amathic-engine",
   "version": "0.1.0",
   "description": "Motor de conversión SKP a DXF",
+  "type": "module",
   "scripts": {
     "dev": "echo 'Beta ejecutándose'"
   },
   "dependencies": {
     "dxf-writer": "latest",
     "formidable": "latest",
-    "openskp": "latest" 
+    "openskp": "latest"
   }
 }
