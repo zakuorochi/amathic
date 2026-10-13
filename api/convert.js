@@ -1,5 +1,7 @@
 import formidable from 'formidable';
 import Drawing from 'dxf-writer';
+import fs from 'fs';
+import { parseSkp } from 'openskp';
 
 // Configuramos Vercel para que nos deje recibir el archivo
 export const config = {
@@ -26,21 +28,25 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'No se detectó ningún archivo.' });
             }
 
-            // 1. MATRIZ DE PRUEBA (El Cubo 3D real)
-            const lineas3D = [
-                { start: [0, 0, 0], end: [100, 0, 0] },
-                { start: [100, 0, 0], end: [100, 100, 0] },
-                { start: [100, 100, 0], end: [0, 100, 0] },
-                { start: [0, 100, 0], end: [0, 0, 0] },
-                { start: [0, 0, 0], end: [0, 0, 100] },
-                { start: [100, 0, 0], end: [100, 0, 100] },
-                { start: [100, 100, 0], end: [100, 100, 100] },
-                { start: [0, 100, 0], end: [0, 100, 100] },
-                { start: [0, 0, 100], end: [100, 0, 100] },
-                { start: [100, 0, 100], end: [100, 100, 100] },
-                { start: [100, 100, 100], end: [0, 100, 100] },
-                { start: [0, 100, 100], end: [0, 0, 100] }
-            ];
+            // 1. LEER EL ARCHIVO REAL Y EXTRAER LA MATRIZ
+            // Leemos el archivo físico temporal que guardó formidable
+            const fileBuffer = fs.readFileSync(uploadedFile.filepath);
+            
+            // Pasamos el binario a openskp para extraer la geometría
+            const skpData = await parseSkp(fileBuffer);
+
+            // Validamos que el archivo realmente tenga líneas que dibujar
+            if (!skpData || !skpData.edges || skpData.edges.length === 0) {
+                return res.status(400).json({ error: 'No se encontraron aristas (líneas) legibles en el modelo SKP.' });
+            }
+
+            // Convertimos las aristas de SketchUp a nuestra matriz matemática de 3 coordenadas
+            const lineas3D = skpData.edges.map(arista => {
+                return {
+                    start: [arista.start.x, arista.start.y, arista.start.z],
+                    end: [arista.end.x, arista.end.y, arista.end.z]
+                };
+            });
 
             // 2. TRANSFORMACIÓN MATEMÁTICA A VISTA ISOMÉTRICA
             const angulo = 30 * (Math.PI / 180);
@@ -57,10 +63,10 @@ export default async function handler(req, res) {
             });
 
             // 3. MOTOR CAD
-       let d = new Drawing();
+            let d = new Drawing();
             d.setUnits('Decimeters');
             
-            // CORRECCIÓN AQUÍ: Usamos addLayer y la activamos
+            // Usamos addLayer y la activamos
             d.addLayer('GEOMETRIA_PROYECTADA', Drawing.ACI.WHITE, 'CONTINUOUS');
             d.setActiveLayer('GEOMETRIA_PROYECTADA');
             
@@ -77,8 +83,8 @@ export default async function handler(req, res) {
             res.status(200).send(dxfString);
 
         } catch (error) {
-            console.error("Error crítico en el cálculo geométrico:", error);
-            res.status(500).json({ error: 'El motor CAD falló al procesar la geometría.' });
+            console.error("Error crítico en el procesamiento del archivo:", error);
+            res.status(500).json({ error: 'El motor falló al procesar el archivo SKP real.' });
         }
     });
 }
